@@ -1,2 +1,29 @@
 <div id="c"></div>
 <script src="viano2.js"></script>
+<script>
+	//document.querySelector('#c').appendChild(Viano().view.canvas);
+	a = Viano(); // initialize a default Viano
+	var maps = {
+		Major_Triad: [4,7],
+		Major_Scale: [2,4,5,7,9,11,12],
+
+		Minor_Triad: [3,7],
+		Natural_Minor: [2,3,5,7,8,10,12]
+	}
+
+	a.forEachKey(function(key){
+		key.onTrigger(function(s){
+			//Generates
+			for (var key in maps){
+				note_list = [key+":",s.note]
+				scheme = maps[key];
+				for (var i =0;i<scheme.length;i++){
+					note_list.push(a.getKey(s.index + scheme[i],true).note);
+				}
+				console.log(note_list.join(" "));
+			}
+		});
+		console.log(key.note);
+		key.trigger();
+	})
+</script>
