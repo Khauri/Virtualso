@@ -1,6 +1,7 @@
 # Virtualso.js
 A collection of customizable canvas-rendered virtual instruments.
 <br/>
+<br/>
 <img src="./screenshots/viano.png" width="45%">
 ## Contents
 - [Installation](#installation)
@@ -12,14 +13,28 @@ A collection of customizable canvas-rendered virtual instruments.
     - [VDrumpad](#VDrumpad) - Virtual Drumpad 
 
 # Installation
-TODO: 
+- Method 1 - Download the latest release here:
+    - [Minified](https://rawgit.com/) 
+    - [Uncompressed](https://rawgit.com/)
+- Method 2 - Using npm
 ```bash
 npm install virtualso
 ```
 
-#Usage
-
-#sounds
+# Usage
+## Browser
+Add Virtualso to your HTML page
+```HTML
+...
+    <script src='path/to/Virtualso.js'></script>
+...
+```
+## Nodejs
+Virtualso is more at home in the browser, but that doesn't mean you can't take it other places 
+```javascript
+var Virtualso = require('Virtualso');
+```
+# Sounds
 Though Virtualso is great for applications that only require visual aides, Virtualso can also be 
 configured to play sounds.
 For size and copyright reasons the sounds themselves are not included.
