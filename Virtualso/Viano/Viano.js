@@ -92,7 +92,7 @@ class Viano extends Instrument{
             ctx.clearRect(0, 0, ctx.width, ctx.height);
         var x = this.pad[0]||1, 
             y = this.pad[1]||1, 
-            width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.keys.length ), 
+            width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
             height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
 
         this.forEachKey(function(key, index){
@@ -172,7 +172,10 @@ class Viano extends Instrument{
                 'accidental' : note.indexOf('#') > -1,
                 'octave' : octave
             })
-            //this.keys[note + octave] = key;
+            // track accidentals and naturals
+            if(key.accidental) this.data.accidentals ++;
+            else this.data.naturals ++;
+
             this.keys.push(key);
             // increase the octave (?)
             if(index == this.scheme.length-1){

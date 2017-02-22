@@ -78,9 +78,10 @@ var options = {
      */
     keyboardControl : true,
     /*
-     * Map keys on keyboard to keys on Viano 
+     * Map keys on keyboard to keys on Viano
+     * Maps on the range [C3, C5]
      */
-    keyMap : Viano.defaultKeymap
+    keyMap : Instrument.defaultKeymap
 };
 
 // Create a new Viano

@@ -1,0 +1,25 @@
+{
+  "name": "virtualso",
+  "version": "1.0.0",
+  "description": "An html5 suite for visualizing instruments",
+  "main": "Virtualso.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Khauri/viano.git"
+  },
+  "keywords": [
+    "piano",
+    "guitar",
+    "keyboard",
+    "visualization"
+  ],
+  "author": "khauri",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Khauri/viano/issues"
+  },
+  "homepage": "https://github.com/Khauri/viano#readme"
+}
