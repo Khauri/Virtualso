@@ -1,11 +1,11 @@
 # Virtualso.js
 A collection of customizable canvas-rendered virtual instruments.
-These instruments are purely visual and do not output sound, but can be 
-configured to do so.
-
+<br/>
+<img src="./screenshots/viano.png" width="45%">
 ## Contents
 - [Installation](#installation)
-- [Usage](#Basic)
+- [Basic Usage](#usage)
+- [Applying Sound](#sounds)
 - [Instruments](#instruments) - Base Virtual Instrument Class
     - [Viano](#viano) - Virtual Piano
     - [VString](#VString) - Virtual Strings (Guitar, Violin, etc...)
@@ -14,8 +14,16 @@ configured to do so.
 # Installation
 TODO: 
 ```bash
-npm install 
+npm install virtualso
 ```
+
+#Usage
+
+#sounds
+Though Virtualso is great for applications that only require visual aides, Virtualso can also be 
+configured to play sounds.
+For size and copyright reasons the sounds themselves are not included.
+
 # Instruments
 All instruments share at least these fields and methods.
 
