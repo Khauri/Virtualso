@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Khauri/viano.git"
+    "url": "git+https://github.com/Khauri/Virtualso.git"
   },
   "keywords": [
     "piano",
@@ -19,7 +19,7 @@
   "author": "khauri",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Khauri/viano/issues"
+    "url": "https://github.com/Khauri/Virtualso/issues"
   },
-  "homepage": "https://github.com/Khauri/viano#readme"
+  "homepage": "https://github.com/Khauri/Virtualso#readme"
 }

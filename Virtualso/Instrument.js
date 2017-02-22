@@ -7,6 +7,7 @@ class Instrument{
     constructor(opts){
         this.active = true;
         this.scheme = this.constructor.defaultNotemap;
+        this.keymap = this.constructor.defaultKeymap;
         this.rotation = 0;
         this.height = 250;
         this.width = 500;
