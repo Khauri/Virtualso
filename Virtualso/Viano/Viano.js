@@ -12,28 +12,36 @@ class Viano extends Instrument{
         super();
         Object.assign(this,
             {
-                scheme : Viano.defaultNotemap,
                 range: ["C", 12],
-                /**
-                 * [left, top, right, buttom] padding of container
-                 */
-                pad : [0,0,0,0],
-                /**
-                 * Width of Viano in pixels
-                 */
-                width : 400,
-                /**
-                 * Height of Viano in pixels
-                 */
-                height : 150,
+                noteNames : false,
+                white: {
+                    width : null, // auto-generate
+                    height : null,
+                    fill : "#fff",
+                    stroke : "#222",
+                    render : null,
+                },
+                black: {
+                    width : null, // auto-generate
+                    height : null,
+                    fill : "#333",
+                    stroke : "#222",
+                    render : null,
+                }
             }, opts);
         // These values are set after the user's values so that they can't be overwritten
         this.keys = [];
-        this.isInBrowser = window && document;
+        this.data = {
+            accidentals : 0,
+            naturals: 0
+        };
+        this.isInBrowser = !!(window && document);
         // set up the view and such
         this._init();
         // generate the viano
         this._generate();
+
+        this.render();
     }
     /**
      * Gets a specific key by its note value 
@@ -44,9 +52,10 @@ class Viano extends Instrument{
     }
 
     /**
-     * Iterate through each key
+     * Chainable shortcut for this.keys.map
      */
     forEachKey( cb ){
+        this.keys.map(cb);
         return this;
     }
 
@@ -64,14 +73,41 @@ class Viano extends Instrument{
                         key.trigger( val, callEvent );
                     })
                 }else{
-                    var k = getKeyByNote(key);
-                    if( key ) key.trigger();
+                    keys = keyStr.split(/\S/gi);
+                    for(var i = 0;  i < keys.length; i++){
+                        var k = getKeyByNote(key);
+                        if( key ) key.trigger();
+                    }
                 }
                 break;
         }
         return this;
     }
 
+    /**
+     * Renders the Viano by rendering each key
+     */
+    render(){
+        var ctx = this.view._context;
+            ctx.clearRect(0, 0, ctx.width, ctx.height);
+        var x = this.pad[0]||1, 
+            y = this.pad[1]||1, 
+            width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.keys.length ), 
+            height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
+
+        this.forEachKey(function(key, index){
+            key.box = [x, y, width, height];
+            if(key.accidental){
+                ctx.globalCompositeOperation = "source-over";
+                key.render(ctx, x - width/4, y, width/2, height/1.5);
+                //x += width
+            }else{
+                ctx.globalCompositeOperation = "destination-over";
+                key.render(ctx, x, y, width, height);
+                x += width;
+            }
+        });
+    }
     /**
      * This method is called when any key is triggered on the keyboard
      */
@@ -80,33 +116,20 @@ class Viano extends Instrument{
     }
 
     /* Getters */
-    /**
-     * Returns the canvas in which viano is drawn on
-     */
-    get view(){
-        if(!this._view && this.isInBrowser){
-            this._view = document.createElement('canvas');
-            this._view._context = this._view.getContext('2d');
-        }else if(!this._view){
-            // throw error?
-            this._view = {};
-        }
-        return this._view;
-    }
+
     /**
      * Set the notemap
      */
     set notemap( map ){
         this.notemap = map;
     }
-
     /* Private methods */
 
     /**
      * Initializes the view and sets the dimensions
      */
     _init(){
-        // the getter automagically creates the view
+        // the getter (this.view) automagically creates the view if it doesn't exist
         this.view.width = this.width; 
         this.view.height = this.height;
     }
@@ -146,7 +169,7 @@ class Viano extends Instrument{
             note = this.scheme[index];
             key = new Key(this, {
                 'note' : note,
-                'accidental' : true,
+                'accidental' : note.indexOf('#') > -1,
                 'octave' : octave
             })
             //this.keys[note + octave] = key;
@@ -162,12 +185,6 @@ class Viano extends Instrument{
      */
     _index_of_note( note ){
         
-    }
-
-    /* Static Methods */
-
-    static get defaultNotemap(){
-        return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     }
 }
 
@@ -196,10 +213,19 @@ class Key{
 
     }
     /**
-     * Draws the key
-     * TODO: canvas default w/ svg fallback(?)
+     * Renders the key
+     * TODO: svg fallback(?)
      */
-    _draw(){
+    render(ctx, top, left, width, height){
+        if(this.accidental){
+            ctx.strokeStyle = this.viano.black.stroke;
+            ctx.fillStyle = this.viano.black.fill;
+        }else{
+            ctx.strokeStyle = this.viano.white.stroke;
+            ctx.fillStyle = this.viano.white.fill;
+        }
+        ctx.fillRect(top, left, width, height);
+        ctx.strokeRect(top, left, width, height);
     }
     /**
      * Sets the state to a value between 0 and 1
@@ -207,4 +233,11 @@ class Key{
     /*set state( val ){
         this._state = Math.min(1, Math.max(0, val));
     }*/
+
+    /**
+     * Checks if a point (x, y) intersects this key
+     */
+    _isInIntersection(x, y){
+        // transform the hitbox by the rotaton
+    }
 }

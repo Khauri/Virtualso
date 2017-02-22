@@ -26,15 +26,18 @@ var options = {
      */
     scheme : Virtualso.defaultScheme // ["C", "C#", "D" ...]
     /*
-     * Instrument's width
+     * Width of view generated
      */
     width : 400,
     /*
-     * Instrument's height
+     * Height of view generated
      */
     height : 200,
     /*
      * Instrument's rotation in radians
+     * Setting this rotation DOES NOT rotate the view itself, but the elements within it.
+     * Make sure the view is big enough to contain the rotated div
+     * To rotate the view itself use CSS or 
      */
     rotation : 0,
 
@@ -57,7 +60,27 @@ var options = {
      * ["A0", "C8"] - Start at A0 and Generate to C8 (standard 88 key piano)
      * ["A0", 88] - Start at A0 and generate 88 keys
      */
-    range : ["C", 12]
+    range : ["C", 12],
+    /*
+     * Choose when to display the name of the note on the key
+     * Possible values:
+     * true - Always display noteName 
+     * false - Never display noteName
+     * "triggered" - Display only on triggered notes
+     * "untriggered" - Display only on untriggered notes (why? I dunno, I just offer solutions okay)
+     * [...'notes'] - String of specific notes to 
+     */
+    noteNames : false,
+    /*
+     * Turn keyboard control of Viano on/off
+     * consider using the toggleInteraction method if you're using multiple Viano instances and 
+     * are experiencing a problem with the Viano playing on all of them
+     */
+    keyboardControl : true,
+    /*
+     * Map keys on keyboard to keys on Viano 
+     */
+    keyMap : Viano.defaultKeymap
 };
 
 // Create a new Viano
