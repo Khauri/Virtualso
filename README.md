@@ -41,7 +41,9 @@ For size and copyright reasons the sounds themselves are not included.
 
 # Instruments
 All instruments share at least these fields and methods.
+Viano, VString, and VDrumPad all 'inherit' from the Instrument class.
 
+## Fields
 ```javascript
 var options = {
     /*
@@ -69,7 +71,10 @@ var instrument = new Virtualso.Instrument( options );
 // methods
 instrument.addEventListener(String, Function);
 ```
-## Viano
+## Methods
+Methods
+
+# Viano
 A Virtual Piano. 
 
 ```javascript
@@ -113,9 +118,9 @@ var piano = new Virtualso.Viano( options );
 document.body.appendChild(piano.view); 
 ```
 
-## VString
+# VString
 VString represents an arbitrarily stringed instrument. Each string vibrates at a particular frequency when clicked.
 
-## VDrumPad
+# VDrumPad
 
 The Virtual DrumPad class
