@@ -4,6 +4,8 @@
   "description": "An html5 suite for visualizing instruments",
   "main": "Virtualso.js",
   "scripts": {
+    "build" : "npm install && grunt",
+    "start" : "grunt watch",
     "test": "test"
   },
   "repository": {
@@ -11,6 +13,9 @@
     "url": "git+https://github.com/Khauri/Virtualso.git"
   },
   "keywords": [
+    "virtualso",
+    "javascript",
+    "canvas",
     "piano",
     "guitar",
     "keyboard",

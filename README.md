@@ -65,6 +65,19 @@ var options = {
      * To rotate the view itself use CSS or 
      */
     rotation : 0,
+    /*
+     * The Canvas in which the instrument is drawn on
+     * If none is specified then one will be created
+     */
+    view: HTMLCanvasElement
+    /*
+     * The top-left-width-height values of the instrument
+     * These do not modify the size of the view
+     */
+     top : 0,
+     left : 0,
+     width : 500,
+     height : 200
 
 };
 var instrument = new Virtualso.Instrument( options );
