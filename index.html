@@ -8,8 +8,21 @@
 		<script src="Virtualso/Instrument.js"></script>
 		<script src="Virtualso/Viano/Viano.js"></script>
 		<script>
-			var v = new Viano({
-			/*pad: [5, 5, 5, 5]*/
+			var opts = {
+				black:{
+				},
+				white:{
+				}
+			};
+			var v = new Viano(opts);
+
+			v.addEventListener("mousedown", function(event, key){
+				key = v.getKeyAtPosition(event.x, event.y);
+				console.log(key);
+			});
+
+			v.addEventListener("mouseup", function(event, key){
+
 			});
 			document.body.appendChild(v.view);
 			console.log(v);
