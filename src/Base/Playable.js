@@ -1,11 +1,11 @@
-const Instrument = require('./Instrument');
+const {deep_extend} = require('./helpers');
 /**
  * A playable component of an instrument
  * Examples include Guitar Strings, Piano Keys, Drumpads, etc...
  */
 module.exports = class Playable{
     constructor(parent, ...opts){
-        Instrument.__merge(this, {
+        deep_extend(this, {
             parent : parent,
             instrumentName : parent.constructor.name,
             note : 'C',

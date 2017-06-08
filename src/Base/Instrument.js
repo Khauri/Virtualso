@@ -1,3 +1,4 @@
+const {deep_extend} = require('./helpers');
 /**
  * Instrument.js
  * ===
@@ -5,7 +6,7 @@
  */
 module.exports = class Instrument{
     constructor(...opts){
-        Instrument.__merge(this, 
+        deep_extend(this, 
         {
             active : true,
 
@@ -21,25 +22,26 @@ module.exports = class Instrument{
             */
             width : 500,
             height : 250,
+            origin : {x : this.width/2, y : this.height/2},
             top : 0,
             left : 0,
             /**
              * [left, top, right, buttom] padding of container
              * Set to 1 to fix a particular bug
              */
-            pad : [1,1,1,1]
-        },
-        ...opts);
-        this.__events = { 
-            "hover": [], 
-            "keydown": [],
-            "keyup":[],
-            // mousedown and touch events should be the same(?)
-            "mousedown":[], 
-            "mouseup":[],
-            "touchdown" : [],
-            "touchup":[]
-        };
+            pad : [1,1,1,1],
+
+            // event hooks
+            __events : { 
+                "hover": [], 
+                "keydown": [],
+                "keyup":[],
+                "mousedown":[], 
+                "mouseup":[],
+                "touchdown" : [],
+                "touchup":[]
+            }
+        }, ...opts);
     }
     /**
      * Adds an event listener to the view
@@ -85,10 +87,21 @@ module.exports = class Instrument{
 
     }
     /**
-     * The render function for the Instrument
+     * The generic render function for an Instrument
      */
     render(){
-
+        let view = this.view,
+            ctx = view.getContext('2d');
+        // resize canvas
+        if(!this.clip){
+            let aabb = this.AABB;
+            view.width = aabb.width;
+            view.height = aabb.height;
+        }
+        // rotate the context around the center
+        ctx.translate(view.width/2, view.height/2);
+        ctx.rotate(this.rotation * Math.PI/180);
+        ctx.translate(-view.width/2, -view.height/2);
     }
     /**
      * The function called when the render is finished
@@ -106,14 +119,42 @@ module.exports = class Instrument{
             this.active = !this.active;
     }
     /** Getters */
-    
+    /**
+     * Get the (A)xis-(A)ligned (B)ounding (B)ox
+     * Convolutes the dimensions with the rotation
+     */
+    get AABB(){
+        let dim = this.dimensions,
+            t = this.rotation * Math.PI/180,
+            c = Math.cos(t),
+            s = Math.sin(t);
+        if (s < 0 ) s = -s;
+        if (c < 0 ) c = -c;
+        return{
+            top : 0,
+            left : 0,
+            width : this.height * s + this.width * c,
+            height : this.height * c + this.width * s
+        }
+    }
+
+    /**
+     * Gets the dimensions via padding calculation and such
+     */
+    get dimensions(){
+        return {
+            x : this.x + this.pad[0],
+            y : this.y + this.pad[1],
+            width : this.width - this.pad[0] - this.pad[2],
+            height : this.height - this.pad[1] - this.pad[3],
+        }
+    }
     /**
      * Returns the canvas in which viano is drawn on
      */
     get view(){
         if(!this._view && this.isInBrowser){
             this._view = document.createElement('canvas');
-            this._view._context = this._view.getContext('2d');
         }else if(!this._view){
             // throw error?
             this._view = {};
@@ -127,7 +168,6 @@ module.exports = class Instrument{
         if(!(v instanceof HTMLCanvasElement))
             throw "Error: view can only be set to HTMLCanvasElement"
         this._view = v;
-        this._view._context = v.getContext('2d');
     }
 
     /* Static Methods */
@@ -136,27 +176,6 @@ module.exports = class Instrument{
     }
 
     /* Private Methods */
-
-    /**
-     * Deep merge the properties of this object and any number of objects passed as arguments.
-     * Similar to Object.Assign, but goes deeper. 
-     * Infinite loops (and recursive errors) are possible so watch out...
-     */
-    static __merge( target, ...sources ){
-        var source;
-        while(sources.length){
-            source = sources.shift();
-            if (!!source && source.constructor == Object){ //merge objects
-                for(let prop in source){
-                    if(target[prop] && target[prop].constructor == Object && source[prop].constructor == Object){
-                        Instrument.__merge(target[prop], source[prop]); // deep merge
-                    }else{
-                        target[prop] = source[prop];
-                    }
-                }
-            }
-        }
-    }
     /**
      * Handles any events called upon the view
      */

@@ -1,30 +1,32 @@
 <!doctype html>
 <html>
 	<head>
+		<style>
+			canvas{
+				margin : 5px;
+				display : block;
+			}
+		</style>
 	</head>
 	<body>
 		<!-- A small demo showing the use of Viano -->
 		<div class="viano-preview"></div>
 		<script src="./dist/Virtualso.js"></script>
 		<script>
-			var opts = {
-				black:{
-				},
-				white:{
-				}
-			};
-			var v = new Virtualso.Viano(opts);
-
-			v.addEventListener("mousedown", function(event, key){
-				key = v.getKeyAtPosition(event.x, event.y);
-				console.log(key);
-			});
-
-			v.addEventListener("mouseup", function(event, key){
-
-			});
-			document.body.appendChild(v.view);
-			console.log(v);
+			// create an array of Virtual Pianos for the tests
+			let vianos = [
+				// Viano Default Generation
+				{},
+				// Viano Default Generation 88 keys
+				{range : ["B" , 88]},
+				// Viano rotate 20 degrees
+				{rotation : 90}
+			];
+			for(let i = 0; i < vianos.length; i++){
+				vianos[i] = new Virtualso.Viano(vianos[i]);
+				document.body.appendChild(vianos[i].view);
+			}
+			
 		</script>
 	</body>
 </html>

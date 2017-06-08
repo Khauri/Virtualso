@@ -28,5 +28,6 @@
   "homepage": "https://github.com/Khauri/Virtualso#readme",
   "devDependencies": {
     "webpack": "^2.6.1"
-  }
+  },
+  "dependencies": {}
 }

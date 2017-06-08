@@ -90,10 +90,11 @@ module.exports = class Viano extends Instrument{
      * Renders the Viano by rendering each key
      */
     render(){
-        var ctx = this.view._context;
+        super.render(); // does the rotations and stuff
+        var ctx = this.view.getContext('2d');
             ctx.clearRect(0, 0, ctx.width, ctx.height);
-        var x = this.pad[0]||1, 
-            y = this.pad[1]||1, 
+        var x = this.pad[0] || 1, 
+            y = this.pad[1] || 1, 
             width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
             height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
 
@@ -158,6 +159,7 @@ module.exports = class Viano extends Instrument{
 
     /**
      * Generate all the keys using the range
+     * (Exponential Growth?)
      */
     _generate(){
         // generator range parser
