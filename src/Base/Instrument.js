@@ -30,7 +30,10 @@ module.exports = class Instrument{
              * Set to 1 to fix a particular bug
              */
             pad : [1,1,1,1],
-
+            // private 
+            "[[private]]" : {
+                events : {}
+            },
             // event hooks
             __events : { 
                 "hover": [], 
@@ -42,6 +45,7 @@ module.exports = class Instrument{
                 "touchup":[]
             }
         }, ...opts);
+        this.isInBrowser = !!(window && document)
     }
     /**
      * Adds an event listener to the view
@@ -131,8 +135,8 @@ module.exports = class Instrument{
         if (s < 0 ) s = -s;
         if (c < 0 ) c = -c;
         return{
-            top : 0,
-            left : 0,
+            top : this.top, // TODO
+            left : this.left, // TODO
             width : this.height * s + this.width * c,
             height : this.height * c + this.width * s
         }
@@ -143,8 +147,8 @@ module.exports = class Instrument{
      */
     get dimensions(){
         return {
-            x : this.x + this.pad[0],
-            y : this.y + this.pad[1],
+            x : this.top + this.pad[0],
+            y : this.left + this.pad[1],
             width : this.width - this.pad[0] - this.pad[2],
             height : this.height - this.pad[1] - this.pad[3],
         }

@@ -27,6 +27,13 @@ module.exports = class Viano extends Instrument{
                 fill : "#333",
                 stroke : "#222",
                 render : null,
+            },
+            "[[private]]": {
+                keys : [],
+                data : {
+                    accidentals : 0,
+                    naturals : 0
+                }
             }
         },
         ...opts, //user's overwritable options
@@ -36,7 +43,7 @@ module.exports = class Viano extends Instrument{
                 accidentals : 0,
                 naturals : 0
             },
-            isInBrowser : !!(window && document)
+            
         });
         // set up the view and such
         this._init();
@@ -91,14 +98,15 @@ module.exports = class Viano extends Instrument{
      */
     render(){
         super.render(); // does the rotations and stuff
-        var ctx = this.view.getContext('2d');
-            ctx.clearRect(0, 0, ctx.width, ctx.height);
-        var x = this.pad[0] || 1, 
-            y = this.pad[1] || 1, 
+        let view = this.view;
+        var ctx = view.getContext('2d');
+            ctx.clearRect(0, 0, view.width, view.height);
+        var x = this.left + this.pad[0] || 1, 
+            y = this.top + this.pad[1] || 1, 
             width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
             height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
 
-        this.forEachKey(function(key, index){
+        this.forEachKey((key, index)=>{
             key.top = y;
             if(key.accidental){
                 ctx.globalCompositeOperation = "source-over";
@@ -146,6 +154,12 @@ module.exports = class Viano extends Instrument{
     set notemap( map ){
         this.notemap = map;
     }
+    /**
+     * 
+     */
+    /*get keys(){
+        return this["[[private]]"].keys;
+    }*/
     /* Private methods */
 
     /**
@@ -162,27 +176,35 @@ module.exports = class Viano extends Instrument{
      * (Exponential Growth?)
      */
     _generate(){
-        // generator range parser
-        var start = this.range[0].toUpperCase().replace('S',"#").replace(/\d/gi, ""),
-            octave = parseInt(this.range[0].replace(/[^\d]/gi, "") , 10) || 0,
-            keysToGenerate;
-        switch(typeof this.range[1]){
-            case "number":
-                keysToGenerate = this.range[1];
-                break;
-            case "string":
-                // find out how many keys to generate using math 
-                // count elements between my key and end key
-                var end = this.range[1].toUpperCase().replace('S',"#").replace(/\d/gi, "");
-                
-                // TODO: Check for start and end key in array
-                var endOctave = parseInt(this.range[1].replace(/[^\d]/gi, "") , 10) || octave + 1,
-                    keysToGenerate = 1 + this.scheme.indexOf(end) - this.scheme.indexOf(start) + (octave + endOctave)*this.scheme.length;
-                break;
+        // First parse the range
+        if(typeof this.range === "string")
+            this.range = this.range.replace(/\s/gi,"").split(/[ ,-]/gi);
+        
+        let init = this.range[0],
+            final = this.range[1] || 12;
+
+        // Parse init value (should always be a string)
+        let [, startNote, startAcc, startOct = 0] = init.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); startOct = parseInt(startOct);
+
+        let keysToGenerate;
+        // one easy case if it's already a number
+        if(typeof final === "number")
+            keysToGenerate = final;
+        // two cases if it's a string
+        else if (/^\d+/.test(final))
+            keysToGenerate = parseInt(final);
+        else{
+            let [, endNote, endAcc, endOct = 0] = final.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); endOct = parseInt(endOct);
+            if(startOct > endOct || ((startOct == endOct) && (endNote < startNote) && (startNote <= 'B')))
+                throw `Impossible Generation Range from ${init} to ${final}`
+            keysToGenerate = 1 + this.scheme.indexOf(endNote) - this.scheme.indexOf(startNote) + (endOct - startOct) * this.scheme.length;
         }
-        // generator
-        var key, note, isAccidental;
-        for(var i = 0, index = this.scheme.indexOf(start); i < keysToGenerate; i++, index = (index + 1) % this.scheme.length){
+
+        // generate the keys
+        let octave = startOct, 
+            key, note, isAccidental;
+        let index = this.scheme.indexOf(startNote + startAcc);
+        for(let i = 0; i < keysToGenerate; i++, index = (index + 1) % this.scheme.length){
             note = this.scheme[index];
             isAccidental = note.indexOf('#') > -1;
             key = new Key(this, {
@@ -192,7 +214,7 @@ module.exports = class Viano extends Instrument{
                 'options' : isAccidental ? this.black : this.white
             })
             // track accidentals and naturals
-            if(key.accidental) this.data.accidentals ++;
+            if(isAccidental) this.data.accidentals ++;
             else this.data.naturals ++;
 
             this.keys.push(key);

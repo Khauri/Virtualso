@@ -16,11 +16,13 @@
 			// create an array of Virtual Pianos for the tests
 			let vianos = [
 				// Viano Default Generation
-				{},
+				{range : "c#4"},
+				// Viano End on black key
+				/*{range : ["C", 14]},
 				// Viano Default Generation 88 keys
 				{range : ["B" , 88]},
 				// Viano rotate 20 degrees
-				{rotation : 90}
+				{rotation : 90}*/
 			];
 			for(let i = 0; i < vianos.length; i++){
 				vianos[i] = new Virtualso.Viano(vianos[i]);
