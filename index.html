@@ -5,8 +5,7 @@
 	<body>
 		<!-- A small demo showing the use of Viano -->
 		<div class="viano-preview"></div>
-		<script src="Virtualso/Instrument.js"></script>
-		<script src="Virtualso/Viano/Viano.js"></script>
+		<script src="./dist/Virtualso.js"></script>
 		<script>
 			var opts = {
 				black:{
@@ -14,7 +13,7 @@
 				white:{
 				}
 			};
-			var v = new Viano(opts);
+			var v = new Virtualso.Viano(opts);
 
 			v.addEventListener("mousedown", function(event, key){
 				key = v.getKeyAtPosition(event.x, event.y);

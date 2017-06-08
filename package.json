@@ -4,8 +4,7 @@
   "description": "An html5 suite for visualizing instruments",
   "main": "Virtualso.js",
   "scripts": {
-    "build" : "npm install && grunt",
-    "start" : "grunt watch",
+    "build": "webpack --watch",
     "test": "test"
   },
   "repository": {
@@ -26,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/Khauri/Virtualso/issues"
   },
-  "homepage": "https://github.com/Khauri/Virtualso#readme"
+  "homepage": "https://github.com/Khauri/Virtualso#readme",
+  "devDependencies": {
+    "webpack": "^2.6.1"
+  }
 }

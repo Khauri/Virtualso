@@ -1,9 +1,9 @@
 /**
  * Instrument.js
  * ===
- * All 
+ * Base Instrument Class
  */
-class Instrument{
+module.exports = class Instrument{
     constructor(...opts){
         Instrument.__merge(this, 
         {
@@ -166,7 +166,8 @@ class Instrument{
         var x = e.clientX - rect.left - this.top,
             y = e.clientY - rect.top -  this.left;
         // now transform mouse position by rotation
-        // 
+        
+        //
         switch(e.type){
             default:
                 this.callEvents(
@@ -177,40 +178,5 @@ class Instrument{
                     }, e.type);
                 break;
         }
-    }
-}
-/**
- * A playable component of an instrument
- * Examples include Guitar Strings, Piano Keys, Drumpads, etc...
- */
-class Playable{
-    constructor(parent, ...opts){
-        Instrument.__merge(this, {
-            parent : parent,
-            instrumentName : parent.constructor.name,
-            note : 'C',
-            octave : 4,
-            width : 0,
-            height : 0,
-            top : 0,
-            left : 0,
-            state : 0
-        }, ...opts);
-    }
-
-    onTrigger(){
-
-    }
-
-    render(){
-
-    }
-    /**
-     * Checks if a point (x, y) intersects this playable.
-     * *Note: does not automatically transform x and y by the rotation or position!*
-     */
-    _isInIntersection(x, y){
-        return (x >= this.left && x <= this.left + this.width) ? 
-                    (y >= this.top && y <= this.top + this.height) : false;
     }
 }
