@@ -15,6 +15,16 @@ module.exports = {
         }
     },
     /**
+     * Takes a list of arguments and returns the first one that's defined
+     * @param {*} args 
+     */
+    getFirstDefined(...args){
+        for(let i = 0; i < args.length; i++){
+            if(args[i]) return args[i];
+        }
+        return null;
+    },
+    /**
      * Parse a note string into usable parts
      * @param {*} n the note string 
      */

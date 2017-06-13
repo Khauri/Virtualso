@@ -36,7 +36,12 @@ module.exports = class Instrument{
             pad : [1,1,1,1],
             // private 
             "[[private]]" : {
-                events : {}
+                events : {
+                    "mousedown" : [],
+                    "mouseup" : [],
+                    "mouseleave" : [],
+                    "mousemove" : []
+                }
             },
             // event hooks
             __events : { 
@@ -69,6 +74,7 @@ module.exports = class Instrument{
             }
             eventArr.push(cb);
         }
+        return this;
     }
     /**
      * Calls the events
@@ -80,8 +86,8 @@ module.exports = class Instrument{
         while(types.length > 0){
             // TODO: string check
             type = types.shift().toLowerCase();
-            if(this.__events[type]){
-                this.__events[type].map(function(cb){
+            if(this["[[private]]"].events[type]){
+               this["[[private]]"].events[type].map(function(cb){
                     cb(data);
                 })
             }
@@ -109,7 +115,7 @@ module.exports = class Instrument{
         // rotate the context around the center of the instrument
         let centerX = (this.left + this.width / 2 ), 
             centerY = (this.top + this.height / 2 );
-            
+
         ctx.translate(view.width/2, view.height/2);
         ctx.rotate(this.rotation * Math.PI/180);
         ctx.translate(-centerX, -centerY);
@@ -191,21 +197,32 @@ module.exports = class Instrument{
      */
     __viewEventHandler(e){
         // calculate position 
-        var rect = e.target.getBoundingClientRect();
-        var x = e.clientX - rect.left - this.top,
-            y = e.clientY - rect.top -  this.left;
-        // now transform mouse position by rotation
-        
-        //
-        switch(e.type){
-            default:
-                this.callEvents(
-                    {   
-                        type : e.type,
-                        x:x, 
-                        y:y
-                    }, e.type);
-                break;
-        }
+        let rect = e.target.getBoundingClientRect();
+        // TODO: Check if actually a click
+        let data = {
+                type : e.type,
+                // real x and y of click
+                x : e.clientX - rect.left - this.top,
+                y: e.clientY - rect.top -  this.left,
+                // x and y of click relative to instrument
+        };
+        let s = Math.sin(this.rotation * Math.PI / 180),
+            c = Math.cos(this.rotation * Math.PI / 180);
+        //if (s < 0 ) s = -s;
+        //if (c < 0 ) c = -c;
+        // transform mouse position by rotation (?)
+        let aabb = this.AABB;
+        let cx = aabb.width / 2,
+            cy = aabb.height / 2;
+            
+        data.rotatedX = cx * c - cy * s;
+        data.rotatedY = cx * s + cy * c;
+
+        data.rotatedX -= this.width/2;
+        data.rotatedY -= this.height/2;
+
+        if(typeof this.__viewEventHook === "function")
+            this.__viewEventHook(data);
+        this.callEvents(data, e.type);
     }
 }

@@ -18,12 +18,18 @@ module.exports = class Viano extends Instrument{
              */
             noteNames : false,
             noOverlap : false,
+            // generic key settings
+            keyOptions : {
+                width : null,
+                height : null
+            },
             // specific key settings
             white: {
                 width : null, // auto-generate
                 height : null,
                 fill : "#f7f7f7",
                 stroke : "#222",
+                lineWidth : 5, // border stroke width
                 render : null,
             },
             black: {
@@ -41,15 +47,7 @@ module.exports = class Viano extends Instrument{
                 }
             }
         },
-        ...opts, //user's overwritable options
-        { // not overwrittable
-            keys : [],
-            data : {
-                accidentals : 0,
-                naturals : 0
-            },
-            
-        });
+        ...opts);
         // set up the view and such
         this._init();
         // generate the viano
@@ -102,7 +100,12 @@ module.exports = class Viano extends Instrument{
      */
     release(keys){
         if(typeof keys === "string")
-            keys.split();
+            keys = keys.split();
+        keys.map((key)=>{
+            key = key.toLowerCase()
+            if(key === "all")
+                this.keys.map((k)=>{k.trigger(0)});
+        });
         return this;
     }
 
@@ -114,47 +117,77 @@ module.exports = class Viano extends Instrument{
         let view = this.view;
         let ctx = view.getContext('2d');
             //ctx.clearRect(this.top, this.left, this.width, this.height);
-
+        let keys = this.keys;
         let x = this.left + this.pad[0] || 1, 
-            y = this.top + this.pad[1] || 1, 
-            width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
-            height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
+            y = this.top + this.pad[1] || 1;
+            /*width = helpers.getFirstDefined( 
+                        this.white.width,
+                        this.keyOptions.width,
+                        (this.width - this.pad[0] - this.pad[2]) / (this.data.naturals) // calculate
+                    ),
+            height = helpers.getFirstDefined(
+                        Math.max(this.white.height || 0, this.black.height || 0),
+                        this.keyOptions.height,
+                        this.height - this.pad[1] - this.pad[3]
+                    );*/
             //
-            let blackWidth = this.black.width * this.data.accidentals,
-                whiteWidth = this.white.width * this.data.naturals; 
+            let wWidth = this.white.width ||
+                         this.keyOptions.width ||
+                         (this.width - this.pad[0] - this.pad[2]) / (this.data.naturals + (this.noOverlap ? this.data.accidentals : 0)),
 
+                bWidth = this.black.width ||
+                         this.keyOptions.width ||
+                         this.noOverlap ? wWidth : wWidth / 2,
+
+                wHeight = this.white.height ||
+                          this.keyOptions.height ||
+                          (this.height - this.pad[1] - this.pad[3]),
+
+                bHeight = this.black.height ||
+                          this.keyOptions.height || 
+                          this.noOverlap ? wHeight : wHeight / 1.5;
+                        
         let top, left, kWidth, kHeight;
-        this.keys.map((key, index)=>{
-            key.top = y;
+        keys.map((key, index)=>{
             top = y;
-            if(key.accidental && !this.noOverlap){
+            if(key.accidental){
                 ctx.globalCompositeOperation = "source-over";
-                // new
-                left = x - width / 4;
-                kWidth = width / 2;
-                kHeight = height / 1.5;
+                if(this.noOverlap){
+                    left = x;
+                    x += bWidth; 
+                }else{
+                    left = x - bWidth / 2;
+                }
+                key.render(ctx, left, top, bWidth, bHeight);
             }else{
                 ctx.globalCompositeOperation = "destination-over";
                 // new
                 left = x;
-                kWidth = width;
-                kHeight = height;
-                x += width;
+                x += wWidth;
+                key.render(ctx, left, top, wWidth, wHeight);
             }
-            key.render(ctx, left, top, kWidth, kHeight);
         });
     }
     /**
      * Returns the note at a particular position
      */
     getKeyAtPosition(x, y){
-        // if the viano is rotated "unrotate" it by rotating x, y around middle
-        var key;
-        for(var i = 0; i < this.keys.length; i++){
-            key = this.keys[i];
-            if(key._isInIntersection(x,y))
-                return key;
+        let keys = this.keys,
+            res = [];
+        for(let i = 0; i < keys.length; i++){
+            if(keys[i]._isInIntersection(x, y)){
+                res.push(keys[i]);
+            }
         }
+        // reduce results to a single value
+        // good enough for now tbh
+        return res.reduce((a, c)=>{
+            if(!a) return c;
+            if(a.accidental && c.accidental) 
+                return a.zIndex > c.zIndex ? a : c;
+            else 
+                return a.accidental ? a : c;
+        }, null);
     }
 
     mousedown(e){
@@ -250,5 +283,19 @@ module.exports = class Viano extends Instrument{
      */
     _index_of_note( note ){
         
+    }
+
+    /// event hooks ///
+    __viewEventHook(data){
+        if(data.x && data.y)
+            data.key = this.getKeyAtPosition(data.x, data.y);
+    }
+    /// getters ///
+    get data(){
+        return this["[[private]]"].data;
+    }
+
+    get keys(){
+        return this["[[private]]"].keys;
     }
 }

@@ -14,7 +14,11 @@ module.exports = class Playable{
             height : 0,
             top : 0,
             left : 0,
-            state : 0
+            state : 0,
+            // z-index
+            zIndex : 0,
+            // render states
+            states : {}
         }, ...opts);
     }
 
@@ -31,6 +35,7 @@ module.exports = class Playable{
      */
     render(ctx, left, top, width, height){
         Object.assign(this, {top : top, left : left, width : width, height : height});
+        // get the render state
         return this;
     }
     /**

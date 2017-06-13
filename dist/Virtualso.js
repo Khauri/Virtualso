@@ -88,6 +88,16 @@ module.exports = {
         }
     },
     /**
+     * Takes a list of arguments and returns the first one that's defined
+     * @param {*} args 
+     */
+    getFirstDefined(...args){
+        for(let i = 0; i < args.length; i++){
+            if(args[i]) return args[i];
+        }
+        return null;
+    },
+    /**
      * Parse a note string into usable parts
      * @param {*} n the note string 
      */
@@ -163,7 +173,12 @@ module.exports = class Instrument{
             pad : [1,1,1,1],
             // private 
             "[[private]]" : {
-                events : {}
+                events : {
+                    "mousedown" : [],
+                    "mouseup" : [],
+                    "mouseleave" : [],
+                    "mousemove" : []
+                }
             },
             // event hooks
             __events : { 
@@ -196,6 +211,7 @@ module.exports = class Instrument{
             }
             eventArr.push(cb);
         }
+        return this;
     }
     /**
      * Calls the events
@@ -207,8 +223,8 @@ module.exports = class Instrument{
         while(types.length > 0){
             // TODO: string check
             type = types.shift().toLowerCase();
-            if(this.__events[type]){
-                this.__events[type].map(function(cb){
+            if(this["[[private]]"].events[type]){
+               this["[[private]]"].events[type].map(function(cb){
                     cb(data);
                 })
             }
@@ -236,7 +252,7 @@ module.exports = class Instrument{
         // rotate the context around the center of the instrument
         let centerX = (this.left + this.width / 2 ), 
             centerY = (this.top + this.height / 2 );
-            
+
         ctx.translate(view.width/2, view.height/2);
         ctx.rotate(this.rotation * Math.PI/180);
         ctx.translate(-centerX, -centerY);
@@ -318,22 +334,33 @@ module.exports = class Instrument{
      */
     __viewEventHandler(e){
         // calculate position 
-        var rect = e.target.getBoundingClientRect();
-        var x = e.clientX - rect.left - this.top,
-            y = e.clientY - rect.top -  this.left;
-        // now transform mouse position by rotation
-        
-        //
-        switch(e.type){
-            default:
-                this.callEvents(
-                    {   
-                        type : e.type,
-                        x:x, 
-                        y:y
-                    }, e.type);
-                break;
-        }
+        let rect = e.target.getBoundingClientRect();
+        // TODO: Check if actually a click
+        let data = {
+                type : e.type,
+                // real x and y of click
+                x : e.clientX - rect.left - this.top,
+                y: e.clientY - rect.top -  this.left,
+                // x and y of click relative to instrument
+        };
+        let s = Math.sin(this.rotation * Math.PI / 180),
+            c = Math.cos(this.rotation * Math.PI / 180);
+        //if (s < 0 ) s = -s;
+        //if (c < 0 ) c = -c;
+        // transform mouse position by rotation (?)
+        let aabb = this.AABB;
+        let cx = aabb.width / 2,
+            cy = aabb.height / 2;
+            
+        data.rotatedX = cx * c - cy * s;
+        data.rotatedY = cx * s + cy * c;
+
+        data.rotatedX -= this.width/2;
+        data.rotatedY -= this.height/2;
+
+        if(typeof this.__viewEventHook === "function")
+            this.__viewEventHook(data);
+        this.callEvents(data, e.type);
     }
 }
 
@@ -357,7 +384,11 @@ module.exports = class Playable{
             height : 0,
             top : 0,
             left : 0,
-            state : 0
+            state : 0,
+            // z-index
+            zIndex : 0,
+            // render states
+            states : {}
         }, ...opts);
     }
 
@@ -374,6 +405,7 @@ module.exports = class Playable{
      */
     render(ctx, left, top, width, height){
         Object.assign(this, {top : top, left : left, width : width, height : height});
+        // get the render state
         return this;
     }
     /**
@@ -404,6 +436,16 @@ module.exports = class Key extends Playable{
                 fill : "#fff",
                 activeFill : "#aaa",
                 render : null,
+            },
+            states : {
+                neutral : {
+                    stroke : "#000",
+                    fill : "#fff",
+                    activeFill : "#aaa"
+                },
+                hover : {
+
+                }
             }
         }, ...opts);
     }
@@ -415,16 +457,16 @@ module.exports = class Key extends Playable{
        this.state = Math.min(1, Math.max(0, val));
        if(this.state === NaN) this.state = 1;
 
-       this.parent.render(); // remove later and orce user to call render themselves
+       //this.parent.render(); // remove later and orce user to call render themselves
        return this;
     }
     /**
      * Renders the key
      * TODO: svg fallback(?)
      */
-    render(ctx, left, top, width, height){
+    render(ctx, left = 0, top = 0, width = 40, height = 250, fill, stroke, lineWidth){
         super.render(ctx, left, top, width, height); // does some setup stuff
-
+        /* basically just draws a rectangle lol */
         if(this.state <= 0){
             ctx.strokeStyle = this.options.stroke;
             ctx.fillStyle = this.options.fill;
@@ -432,6 +474,7 @@ module.exports = class Key extends Playable{
             ctx.strokeStyle = this.options.activeStroke;
             ctx.fillStyle = this.options.activeFill;
         }
+        //ctx.lineWidth = this.options.lineWidth;
         
         ctx.fillRect(this.left, this.top, this.width, this.height);
         ctx.strokeRect(this.left, this.top, this.width, this.height);
@@ -462,12 +505,18 @@ module.exports = class Viano extends Instrument{
              */
             noteNames : false,
             noOverlap : false,
+            // generic key settings
+            keyOptions : {
+                width : null,
+                height : null
+            },
             // specific key settings
             white: {
                 width : null, // auto-generate
                 height : null,
                 fill : "#f7f7f7",
                 stroke : "#222",
+                lineWidth : 5, // border stroke width
                 render : null,
             },
             black: {
@@ -485,15 +534,7 @@ module.exports = class Viano extends Instrument{
                 }
             }
         },
-        ...opts, //user's overwritable options
-        { // not overwrittable
-            keys : [],
-            data : {
-                accidentals : 0,
-                naturals : 0
-            },
-            
-        });
+        ...opts);
         // set up the view and such
         this._init();
         // generate the viano
@@ -546,7 +587,12 @@ module.exports = class Viano extends Instrument{
      */
     release(keys){
         if(typeof keys === "string")
-            keys.split();
+            keys = keys.split();
+        keys.map((key)=>{
+            key = key.toLowerCase()
+            if(key === "all")
+                this.keys.map((k)=>{k.trigger(0)});
+        });
         return this;
     }
 
@@ -558,47 +604,77 @@ module.exports = class Viano extends Instrument{
         let view = this.view;
         let ctx = view.getContext('2d');
             //ctx.clearRect(this.top, this.left, this.width, this.height);
-
+        let keys = this.keys;
         let x = this.left + this.pad[0] || 1, 
-            y = this.top + this.pad[1] || 1, 
-            width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
-            height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
+            y = this.top + this.pad[1] || 1;
+            /*width = helpers.getFirstDefined( 
+                        this.white.width,
+                        this.keyOptions.width,
+                        (this.width - this.pad[0] - this.pad[2]) / (this.data.naturals) // calculate
+                    ),
+            height = helpers.getFirstDefined(
+                        Math.max(this.white.height || 0, this.black.height || 0),
+                        this.keyOptions.height,
+                        this.height - this.pad[1] - this.pad[3]
+                    );*/
             //
-            let blackWidth = this.black.width * this.data.accidentals,
-                whiteWidth = this.white.width * this.data.naturals; 
+            let wWidth = this.white.width ||
+                         this.keyOptions.width ||
+                         (this.width - this.pad[0] - this.pad[2]) / (this.data.naturals + (this.noOverlap ? this.data.accidentals : 0)),
 
+                bWidth = this.black.width ||
+                         this.keyOptions.width ||
+                         this.noOverlap ? wWidth : wWidth / 2,
+
+                wHeight = this.white.height ||
+                          this.keyOptions.height ||
+                          (this.height - this.pad[1] - this.pad[3]),
+
+                bHeight = this.black.height ||
+                          this.keyOptions.height || 
+                          this.noOverlap ? wHeight : wHeight / 1.5;
+                        
         let top, left, kWidth, kHeight;
-        this.keys.map((key, index)=>{
-            key.top = y;
+        keys.map((key, index)=>{
             top = y;
-            if(key.accidental && !this.noOverlap){
+            if(key.accidental){
                 ctx.globalCompositeOperation = "source-over";
-                // new
-                left = x - width / 4;
-                kWidth = width / 2;
-                kHeight = height / 1.5;
+                if(this.noOverlap){
+                    left = x;
+                    x += bWidth; 
+                }else{
+                    left = x - bWidth / 2;
+                }
+                key.render(ctx, left, top, bWidth, bHeight);
             }else{
                 ctx.globalCompositeOperation = "destination-over";
                 // new
                 left = x;
-                kWidth = width;
-                kHeight = height;
-                x += width;
+                x += wWidth;
+                key.render(ctx, left, top, wWidth, wHeight);
             }
-            key.render(ctx, left, top, kWidth, kHeight);
         });
     }
     /**
      * Returns the note at a particular position
      */
     getKeyAtPosition(x, y){
-        // if the viano is rotated "unrotate" it by rotating x, y around middle
-        var key;
-        for(var i = 0; i < this.keys.length; i++){
-            key = this.keys[i];
-            if(key._isInIntersection(x,y))
-                return key;
+        let keys = this.keys,
+            res = [];
+        for(let i = 0; i < keys.length; i++){
+            if(keys[i]._isInIntersection(x, y)){
+                res.push(keys[i]);
+            }
         }
+        // reduce results to a single value
+        // good enough for now tbh
+        return res.reduce((a, c)=>{
+            if(!a) return c;
+            if(a.accidental && c.accidental) 
+                return a.zIndex > c.zIndex ? a : c;
+            else 
+                return a.accidental ? a : c;
+        }, null);
     }
 
     mousedown(e){
@@ -694,6 +770,20 @@ module.exports = class Viano extends Instrument{
      */
     _index_of_note( note ){
         
+    }
+
+    /// event hooks ///
+    __viewEventHook(data){
+        if(data.x && data.y)
+            data.key = this.getKeyAtPosition(data.x, data.y);
+    }
+    /// getters ///
+    get data(){
+        return this["[[private]]"].data;
+    }
+
+    get keys(){
+        return this["[[private]]"].keys;
     }
 }
 
