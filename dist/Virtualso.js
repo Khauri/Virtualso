@@ -86,6 +86,22 @@ module.exports = {
                 }
             }
         }
+    },
+    /**
+     * Parse a note string into usable parts
+     * @param {*} n the note string 
+     */
+    parseNote(n){
+        if(!(typeof n === "string"))
+            throw "Can only parse string"
+        let [fullMatch, fullNote, baseNote, acc = false, octave = undefined] = n.match(/(([a-g])([#sb]?))(\d+)?/i);
+        return {
+            full : fullMatch,
+            note : fullNote,
+            base : baseNote,
+            acc : acc,
+            octave : parseInt(octave)
+        }
     }
 }
 
@@ -95,7 +111,8 @@ module.exports = {
 
 module.exports = {
     Instrument : __webpack_require__(3),
-    Playable : __webpack_require__(4)
+    Playable : __webpack_require__(4),
+    helpers : __webpack_require__(0)
 }
 
 /***/ }),
@@ -119,6 +136,9 @@ module.exports = class Instrument{
         deep_extend(this, 
         {
             active : true,
+            // whether or not this instrument is in focus
+            // useful for deciding if keyboard inputs affect it
+            focused : true,
 
             scheme : this.constructor.defaultNotemap,
             keymap : this.constructor.defaultKeymap,
@@ -130,8 +150,9 @@ module.exports = class Instrument{
             * useful for positioning inside another view and also
             * keeping
             */
-            width : 500,
-            height : 250,
+            // this is not the width and height of the view
+            width : 500, // width of instrument
+            height : 250, // height of instrument
             origin : {x : this.width/2, y : this.height/2},
             top : 0,
             left : 0,
@@ -162,7 +183,7 @@ module.exports = class Instrument{
      */
     addEventListener(type, cb){
         // TODO: string check && cb function check
-        var eventArr = this.__events[type.toLowerCase()];
+        var eventArr = this["[[private]]"].events[type.toLowerCase()];
         if(eventArr){
             // Add event listener to 
             if(eventArr.length == 0){
@@ -212,10 +233,13 @@ module.exports = class Instrument{
             view.width = aabb.width;
             view.height = aabb.height;
         }
-        // rotate the context around the center
+        // rotate the context around the center of the instrument
+        let centerX = (this.left + this.width / 2 ), 
+            centerY = (this.top + this.height / 2 );
+            
         ctx.translate(view.width/2, view.height/2);
         ctx.rotate(this.rotation * Math.PI/180);
-        ctx.translate(-view.width/2, -view.height/2);
+        ctx.translate(-centerX, -centerY);
     }
     /**
      * The function called when the render is finished
@@ -267,13 +291,12 @@ module.exports = class Instrument{
      * Returns the canvas in which viano is drawn on
      */
     get view(){
-        if(!this._view && this.isInBrowser){
-            this._view = document.createElement('canvas');
-        }else if(!this._view){
-            // throw error?
-            this._view = {};
+        if(!this["[[private]]"].view && this.isInBrowser){
+            this["[[private]]"].view = document.createElement('canvas');
+        }else if(!this["[[private]]"].view){
+            throw "Cannot get view while not in browser!";
         }
-        return this._view;
+        return this["[[private]]"].view;
     }
     /**
      * Set this view to an html cnavas element
@@ -281,7 +304,7 @@ module.exports = class Instrument{
     set view(v){
         if(!(v instanceof HTMLCanvasElement))
             throw "Error: view can only be set to HTMLCanvasElement"
-        this._view = v;
+        this["[[private]]"].view = v;
     }
 
     /* Static Methods */
@@ -341,9 +364,17 @@ module.exports = class Playable{
     onTrigger(){
 
     }
-
-    render(){
-
+    /**
+     * Generic render function for a playable
+     * @param {*} ctx The HTMLCanvas2dRenderingContext passed in
+     * @param {*} top The top coordinate of the Axis-Aligned Bounding Box
+     * @param {*} left The left coordinate of the Axis-Aligned Bounding Box
+     * @param {*} width The width of the Axis-Aligned Bounding Box
+     * @param {*} height The height of the Axis-Aligned Bounding Box
+     */
+    render(ctx, left, top, width, height){
+        Object.assign(this, {top : top, left : left, width : width, height : height});
+        return this;
     }
     /**
      * Checks if a point (x, y) intersects this playable.
@@ -372,8 +403,6 @@ module.exports = class Key extends Playable{
                 stroke : "#000",
                 fill : "#fff",
                 activeFill : "#aaa",
-                width : 0,
-                height : 0,
                 render : null,
             }
         }, ...opts);
@@ -393,7 +422,9 @@ module.exports = class Key extends Playable{
      * Renders the key
      * TODO: svg fallback(?)
      */
-    render(ctx){
+    render(ctx, left, top, width, height){
+        super.render(ctx, left, top, width, height); // does some setup stuff
+
         if(this.state <= 0){
             ctx.strokeStyle = this.options.stroke;
             ctx.fillStyle = this.options.fill;
@@ -411,7 +442,7 @@ module.exports = class Key extends Playable{
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const {Instrument} = __webpack_require__(1);
+const {Instrument, helpers} = __webpack_require__(1);
 const Key = __webpack_require__(5);
 /**
  * Viano.js 
@@ -424,13 +455,18 @@ const Key = __webpack_require__(5);
  */
 module.exports = class Viano extends Instrument{
     constructor(...opts){
-        super({ // overwritable
+        super({ 
             range: ["C", 12],
+            /**
+             * Display settings
+             */
             noteNames : false,
+            noOverlap : false,
+            // specific key settings
             white: {
                 width : null, // auto-generate
                 height : null,
-                fill : "#fff",
+                fill : "#f7f7f7",
                 stroke : "#222",
                 render : null,
             },
@@ -438,7 +474,7 @@ module.exports = class Viano extends Instrument{
                 width : null, // auto-generate
                 height : null,
                 fill : "#333",
-                stroke : "#222",
+                stroke : "#333",
                 render : null,
             },
             "[[private]]": {
@@ -484,25 +520,33 @@ module.exports = class Viano extends Instrument{
     /**
      * Trigger one or more keys
      */
-    trigger(keyStr, val, callEvent = true){
-        switch(typeof keyStr){
-            case "object":
-                // TODO
-                break;
-            case "string":
-                if (keyStr.toLowerCase() == "all"){
-                    this.forEachKey(function(key, index){
-                        key.trigger( val, callEvent );
-                    })
-                }else{
-                    keys = keyStr.split(/\S/gi);
-                    for(var i = 0;  i < keys.length; i++){
-                        var k = getKeyByNote(key);
-                        if( key ) key.trigger();
+    trigger(keys, val, callEvent = true){
+        if(typeof keys === "string")
+            keys = keys.split(/\s/g); // split string by spaces
+        keys.map((key)=>{
+            if(key.toLowerCase() === "all") // trigger all keys
+                this.keys.map((k)=>{k.trigger(val)});
+            else{
+                let info = helpers.parseNote(key);
+                this.keys.map((k)=>{
+                    if(k.note.toUpperCase() === info.note.toUpperCase()){ //if it's the same note
+                        if(isNaN(info.octave) || info.octave === k.octave) // same octave or none specified
+                            k.trigger(val);
                     }
-                }
-                break;
-        }
+                });
+            }
+        });
+        this.render();
+        return this;
+    }
+
+    /**
+     * Releases all keys in an array or string
+     * @param {*} keys 
+     */
+    release(keys){
+        if(typeof keys === "string")
+            keys.split();
         return this;
     }
 
@@ -510,30 +554,38 @@ module.exports = class Viano extends Instrument{
      * Renders the Viano by rendering each key
      */
     render(){
-        super.render(); // does the rotations and stuff
+        super.render(); // Performs the rotations and what-not so they needn't be worried about
         let view = this.view;
-        var ctx = view.getContext('2d');
-            ctx.clearRect(0, 0, view.width, view.height);
-        var x = this.left + this.pad[0] || 1, 
+        let ctx = view.getContext('2d');
+            //ctx.clearRect(this.top, this.left, this.width, this.height);
+
+        let x = this.left + this.pad[0] || 1, 
             y = this.top + this.pad[1] || 1, 
             width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
             height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
+            //
+            let blackWidth = this.black.width * this.data.accidentals,
+                whiteWidth = this.white.width * this.data.naturals; 
 
-        this.forEachKey((key, index)=>{
+        let top, left, kWidth, kHeight;
+        this.keys.map((key, index)=>{
             key.top = y;
-            if(key.accidental){
+            top = y;
+            if(key.accidental && !this.noOverlap){
                 ctx.globalCompositeOperation = "source-over";
-                key.left = x - width/4;
-                key.width = width/2;
-                key.height = height/1.5;
+                // new
+                left = x - width / 4;
+                kWidth = width / 2;
+                kHeight = height / 1.5;
             }else{
                 ctx.globalCompositeOperation = "destination-over";
-                key.left = x;
-                key.width = width;
-                key.height = height;
+                // new
+                left = x;
+                kWidth = width;
+                kHeight = height;
                 x += width;
             }
-            key.render(ctx);
+            key.render(ctx, left, top, kWidth, kHeight);
         });
     }
     /**
@@ -586,10 +638,9 @@ module.exports = class Viano extends Instrument{
 
     /**
      * Generate all the keys using the range
-     * (Exponential Growth?)
      */
     _generate(){
-        // First parse the range
+        // First parse the range into a start note and then the amount of notes to generate
         if(typeof this.range === "string")
             this.range = this.range.replace(/\s/gi,"").split(/[ ,-]/gi);
         
@@ -597,7 +648,7 @@ module.exports = class Viano extends Instrument{
             final = this.range[1] || 12;
 
         // Parse init value (should always be a string)
-        let [, startNote, startAcc, startOct = 0] = init.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); startOct = parseInt(startOct);
+        let [, startNote, startAcc = "", startOct = 0] = init.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); startOct = parseInt(startOct);
 
         let keysToGenerate;
         // one easy case if it's already a number
@@ -607,27 +658,28 @@ module.exports = class Viano extends Instrument{
         else if (/^\d+/.test(final))
             keysToGenerate = parseInt(final);
         else{
-            let [, endNote, endAcc, endOct = 0] = final.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); endOct = parseInt(endOct);
+            let [, endNote, endAcc = "", endOct = 0] = final.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); endOct = parseInt(endOct);
             if(startOct > endOct || ((startOct == endOct) && (endNote < startNote) && (startNote <= 'B')))
-                throw `Impossible Generation Range from ${init} to ${final}`
+                throw `Impossible Generation Range from ${init} to ${final}!`
             keysToGenerate = 1 + this.scheme.indexOf(endNote) - this.scheme.indexOf(startNote) + (endOct - startOct) * this.scheme.length;
         }
 
         // generate the keys
         let octave = startOct, 
-            key, note, isAccidental;
-        let index = this.scheme.indexOf(startNote + startAcc);
+            key, note, accidental;
+        let index = this.scheme.indexOf(startNote + startAcc); // doesn't currently account for using b or s.
+
         for(let i = 0; i < keysToGenerate; i++, index = (index + 1) % this.scheme.length){
             note = this.scheme[index];
-            isAccidental = note.indexOf('#') > -1;
+            [, accidental = false] = note.match(/[a-g]([#sb])?/i);
             key = new Key(this, {
-                'note' : note,
-                'accidental' : isAccidental,
-                'octave' : octave,
-                'options' : isAccidental ? this.black : this.white
-            })
+                note : note,
+                accidental : accidental,
+                octave : octave,
+                options : accidental ? this.black : this.white
+            });
             // track accidentals and naturals
-            if(isAccidental) this.data.accidentals ++;
+            if(accidental) this.data.accidentals ++;
             else this.data.naturals ++;
 
             this.keys.push(key);

@@ -10,25 +10,49 @@
 	</head>
 	<body>
 		<!-- A small demo showing the use of Viano -->
-		<div class="viano-preview"></div>
 		<script src="./dist/Virtualso.js"></script>
 		<script>
+			
 			// create an array of Virtual Pianos for the tests
 			let vianos = [
-				// Viano Default Generation
-				{range : "c#4"},
-				// Viano End on black key
-				/*{range : ["C", 14]},
-				// Viano Default Generation 88 keys
-				{range : ["B" , 88]},
-				// Viano rotate 20 degrees
-				{rotation : 90}*/
+				{
+					title : "Test Default Configurations"
+				},
+				{
+					title : "Test No Overlapping Keys",
+					noOverlap : true
+				},
+				{
+					title : "Test Range Array ['C', 20]",
+					range : ["C", 20]
+				},
+				{
+					title : "Test Range String 'B, 20'",
+					range : "b, 20"
+				},
+				{
+					title : "Test Range Array ['C', '27']",
+					range : ["C", '27']
+				},
+				{
+					title : "Test rotation",
+					rotation : -45,
+				}
 			];
-			for(let i = 0; i < vianos.length; i++){
+			let t1, t2;
+			for(let i = 0, div; i < vianos.length; i++){
+				t1 = performance.now();
 				vianos[i] = new Virtualso.Viano(vianos[i]);
-				document.body.appendChild(vianos[i].view);
+				t2 = performance.now();
+				// calculate the amount of time it takes to generate
+				let genPerf = (t2 - t1).toFixed(2),
+					genColor = genPerf >= 15 ? "red" : "green";
+				// put it all together
+				div = document.createElement('div');
+				div.innerHTML = `<p>${vianos[i].title || "Untitled Test"}</p> <p>Generation: <span style='color:${genColor};'>${genPerf} ms</span></p>`;
+				div.appendChild(vianos[i].view);
+				document.body.appendChild(div);
 			}
-			
 		</script>
 	</body>
 </html>

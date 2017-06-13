@@ -21,9 +21,17 @@ module.exports = class Playable{
     onTrigger(){
 
     }
-
-    render(){
-
+    /**
+     * Generic render function for a playable
+     * @param {*} ctx The HTMLCanvas2dRenderingContext passed in
+     * @param {*} top The top coordinate of the Axis-Aligned Bounding Box
+     * @param {*} left The left coordinate of the Axis-Aligned Bounding Box
+     * @param {*} width The width of the Axis-Aligned Bounding Box
+     * @param {*} height The height of the Axis-Aligned Bounding Box
+     */
+    render(ctx, left, top, width, height){
+        Object.assign(this, {top : top, left : left, width : width, height : height});
+        return this;
     }
     /**
      * Checks if a point (x, y) intersects this playable.

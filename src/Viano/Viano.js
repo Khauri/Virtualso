@@ -1,4 +1,4 @@
-const {Instrument} = require('../Base');
+const {Instrument, helpers} = require('../Base');
 const Key = require('./Key');
 /**
  * Viano.js 
@@ -11,13 +11,18 @@ const Key = require('./Key');
  */
 module.exports = class Viano extends Instrument{
     constructor(...opts){
-        super({ // overwritable
+        super({ 
             range: ["C", 12],
+            /**
+             * Display settings
+             */
             noteNames : false,
+            noOverlap : false,
+            // specific key settings
             white: {
                 width : null, // auto-generate
                 height : null,
-                fill : "#fff",
+                fill : "#f7f7f7",
                 stroke : "#222",
                 render : null,
             },
@@ -25,7 +30,7 @@ module.exports = class Viano extends Instrument{
                 width : null, // auto-generate
                 height : null,
                 fill : "#333",
-                stroke : "#222",
+                stroke : "#333",
                 render : null,
             },
             "[[private]]": {
@@ -71,25 +76,33 @@ module.exports = class Viano extends Instrument{
     /**
      * Trigger one or more keys
      */
-    trigger(keyStr, val, callEvent = true){
-        switch(typeof keyStr){
-            case "object":
-                // TODO
-                break;
-            case "string":
-                if (keyStr.toLowerCase() == "all"){
-                    this.forEachKey(function(key, index){
-                        key.trigger( val, callEvent );
-                    })
-                }else{
-                    keys = keyStr.split(/\S/gi);
-                    for(var i = 0;  i < keys.length; i++){
-                        var k = getKeyByNote(key);
-                        if( key ) key.trigger();
+    trigger(keys, val, callEvent = true){
+        if(typeof keys === "string")
+            keys = keys.split(/\s/g); // split string by spaces
+        keys.map((key)=>{
+            if(key.toLowerCase() === "all") // trigger all keys
+                this.keys.map((k)=>{k.trigger(val)});
+            else{
+                let info = helpers.parseNote(key);
+                this.keys.map((k)=>{
+                    if(k.note.toUpperCase() === info.note.toUpperCase()){ //if it's the same note
+                        if(isNaN(info.octave) || info.octave === k.octave) // same octave or none specified
+                            k.trigger(val);
                     }
-                }
-                break;
-        }
+                });
+            }
+        });
+        this.render();
+        return this;
+    }
+
+    /**
+     * Releases all keys in an array or string
+     * @param {*} keys 
+     */
+    release(keys){
+        if(typeof keys === "string")
+            keys.split();
         return this;
     }
 
@@ -97,30 +110,38 @@ module.exports = class Viano extends Instrument{
      * Renders the Viano by rendering each key
      */
     render(){
-        super.render(); // does the rotations and stuff
+        super.render(); // Performs the rotations and what-not so they needn't be worried about
         let view = this.view;
-        var ctx = view.getContext('2d');
-            ctx.clearRect(0, 0, view.width, view.height);
-        var x = this.left + this.pad[0] || 1, 
+        let ctx = view.getContext('2d');
+            //ctx.clearRect(this.top, this.left, this.width, this.height);
+
+        let x = this.left + this.pad[0] || 1, 
             y = this.top + this.pad[1] || 1, 
             width = (this.white.width || (this.width - this.pad[0] - this.pad[2]) / this.data.naturals ), 
             height = (this.white.height || this.height - this.pad[1] - this.pad[3]);
+            //
+            let blackWidth = this.black.width * this.data.accidentals,
+                whiteWidth = this.white.width * this.data.naturals; 
 
-        this.forEachKey((key, index)=>{
+        let top, left, kWidth, kHeight;
+        this.keys.map((key, index)=>{
             key.top = y;
-            if(key.accidental){
+            top = y;
+            if(key.accidental && !this.noOverlap){
                 ctx.globalCompositeOperation = "source-over";
-                key.left = x - width/4;
-                key.width = width/2;
-                key.height = height/1.5;
+                // new
+                left = x - width / 4;
+                kWidth = width / 2;
+                kHeight = height / 1.5;
             }else{
                 ctx.globalCompositeOperation = "destination-over";
-                key.left = x;
-                key.width = width;
-                key.height = height;
+                // new
+                left = x;
+                kWidth = width;
+                kHeight = height;
                 x += width;
             }
-            key.render(ctx);
+            key.render(ctx, left, top, kWidth, kHeight);
         });
     }
     /**
@@ -173,10 +194,9 @@ module.exports = class Viano extends Instrument{
 
     /**
      * Generate all the keys using the range
-     * (Exponential Growth?)
      */
     _generate(){
-        // First parse the range
+        // First parse the range into a start note and then the amount of notes to generate
         if(typeof this.range === "string")
             this.range = this.range.replace(/\s/gi,"").split(/[ ,-]/gi);
         
@@ -184,7 +204,7 @@ module.exports = class Viano extends Instrument{
             final = this.range[1] || 12;
 
         // Parse init value (should always be a string)
-        let [, startNote, startAcc, startOct = 0] = init.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); startOct = parseInt(startOct);
+        let [, startNote, startAcc = "", startOct = 0] = init.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); startOct = parseInt(startOct);
 
         let keysToGenerate;
         // one easy case if it's already a number
@@ -194,27 +214,28 @@ module.exports = class Viano extends Instrument{
         else if (/^\d+/.test(final))
             keysToGenerate = parseInt(final);
         else{
-            let [, endNote, endAcc, endOct = 0] = final.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); endOct = parseInt(endOct);
+            let [, endNote, endAcc = "", endOct = 0] = final.toUpperCase().match(/([a-g])([#sb])?(\d+)?/i); endOct = parseInt(endOct);
             if(startOct > endOct || ((startOct == endOct) && (endNote < startNote) && (startNote <= 'B')))
-                throw `Impossible Generation Range from ${init} to ${final}`
+                throw `Impossible Generation Range from ${init} to ${final}!`
             keysToGenerate = 1 + this.scheme.indexOf(endNote) - this.scheme.indexOf(startNote) + (endOct - startOct) * this.scheme.length;
         }
 
         // generate the keys
         let octave = startOct, 
-            key, note, isAccidental;
-        let index = this.scheme.indexOf(startNote + startAcc);
+            key, note, accidental;
+        let index = this.scheme.indexOf(startNote + startAcc); // doesn't currently account for using b or s.
+
         for(let i = 0; i < keysToGenerate; i++, index = (index + 1) % this.scheme.length){
             note = this.scheme[index];
-            isAccidental = note.indexOf('#') > -1;
+            [, accidental = false] = note.match(/[a-g]([#sb])?/i);
             key = new Key(this, {
-                'note' : note,
-                'accidental' : isAccidental,
-                'octave' : octave,
-                'options' : isAccidental ? this.black : this.white
-            })
+                note : note,
+                accidental : accidental,
+                octave : octave,
+                options : accidental ? this.black : this.white
+            });
             // track accidentals and naturals
-            if(isAccidental) this.data.accidentals ++;
+            if(accidental) this.data.accidentals ++;
             else this.data.naturals ++;
 
             this.keys.push(key);

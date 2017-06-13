@@ -13,5 +13,21 @@ module.exports = {
                 }
             }
         }
+    },
+    /**
+     * Parse a note string into usable parts
+     * @param {*} n the note string 
+     */
+    parseNote(n){
+        if(!(typeof n === "string"))
+            throw "Can only parse string"
+        let [fullMatch, fullNote, baseNote, acc = false, octave = undefined] = n.match(/(([a-g])([#sb]?))(\d+)?/i);
+        return {
+            full : fullMatch,
+            note : fullNote,
+            base : baseNote,
+            acc : acc,
+            octave : parseInt(octave)
+        }
     }
 }

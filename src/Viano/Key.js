@@ -11,8 +11,6 @@ module.exports = class Key extends Playable{
                 stroke : "#000",
                 fill : "#fff",
                 activeFill : "#aaa",
-                width : 0,
-                height : 0,
                 render : null,
             }
         }, ...opts);
@@ -32,7 +30,9 @@ module.exports = class Key extends Playable{
      * Renders the key
      * TODO: svg fallback(?)
      */
-    render(ctx){
+    render(ctx, left, top, width, height){
+        super.render(ctx, left, top, width, height); // does some setup stuff
+
         if(this.state <= 0){
             ctx.strokeStyle = this.options.stroke;
             ctx.fillStyle = this.options.fill;

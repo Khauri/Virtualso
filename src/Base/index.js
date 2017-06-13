@@ -1,4 +1,5 @@
 module.exports = {
     Instrument : require('./Instrument'),
-    Playable : require('./Playable')
+    Playable : require('./Playable'),
+    helpers : require('./helpers')
 }

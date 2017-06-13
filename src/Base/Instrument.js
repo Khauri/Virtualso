@@ -9,6 +9,9 @@ module.exports = class Instrument{
         deep_extend(this, 
         {
             active : true,
+            // whether or not this instrument is in focus
+            // useful for deciding if keyboard inputs affect it
+            focused : true,
 
             scheme : this.constructor.defaultNotemap,
             keymap : this.constructor.defaultKeymap,
@@ -20,8 +23,9 @@ module.exports = class Instrument{
             * useful for positioning inside another view and also
             * keeping
             */
-            width : 500,
-            height : 250,
+            // this is not the width and height of the view
+            width : 500, // width of instrument
+            height : 250, // height of instrument
             origin : {x : this.width/2, y : this.height/2},
             top : 0,
             left : 0,
@@ -52,7 +56,7 @@ module.exports = class Instrument{
      */
     addEventListener(type, cb){
         // TODO: string check && cb function check
-        var eventArr = this.__events[type.toLowerCase()];
+        var eventArr = this["[[private]]"].events[type.toLowerCase()];
         if(eventArr){
             // Add event listener to 
             if(eventArr.length == 0){
@@ -102,10 +106,13 @@ module.exports = class Instrument{
             view.width = aabb.width;
             view.height = aabb.height;
         }
-        // rotate the context around the center
+        // rotate the context around the center of the instrument
+        let centerX = (this.left + this.width / 2 ), 
+            centerY = (this.top + this.height / 2 );
+            
         ctx.translate(view.width/2, view.height/2);
         ctx.rotate(this.rotation * Math.PI/180);
-        ctx.translate(-view.width/2, -view.height/2);
+        ctx.translate(-centerX, -centerY);
     }
     /**
      * The function called when the render is finished
@@ -157,13 +164,12 @@ module.exports = class Instrument{
      * Returns the canvas in which viano is drawn on
      */
     get view(){
-        if(!this._view && this.isInBrowser){
-            this._view = document.createElement('canvas');
-        }else if(!this._view){
-            // throw error?
-            this._view = {};
+        if(!this["[[private]]"].view && this.isInBrowser){
+            this["[[private]]"].view = document.createElement('canvas');
+        }else if(!this["[[private]]"].view){
+            throw "Cannot get view while not in browser!";
         }
-        return this._view;
+        return this["[[private]]"].view;
     }
     /**
      * Set this view to an html cnavas element
@@ -171,7 +177,7 @@ module.exports = class Instrument{
     set view(v){
         if(!(v instanceof HTMLCanvasElement))
             throw "Error: view can only be set to HTMLCanvasElement"
-        this._view = v;
+        this["[[private]]"].view = v;
     }
 
     /* Static Methods */
