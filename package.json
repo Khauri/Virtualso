@@ -2,7 +2,7 @@
   "name": "virtualso",
   "version": "1.0.0",
   "description": "An html5 suite for visualizing instruments",
-  "main": "Virtualso.js",
+  "main": "src/index.js",
   "scripts": {
     "build": "webpack --watch",
     "test": "test"

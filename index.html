@@ -42,23 +42,19 @@
 				}
 			];
 			let t1, t2;
+			let mousedown = false;
 			for(let i = 0, div; i < vianos.length; i++){
 				t1 = performance.now();
 				vianos[i] = new Virtualso.Viano(vianos[i]);
-				t2 = performance.now();
-
-				// a few basic events handling 
-				vianos[i].addEventListener("mousemove", (e) =>{
-					// release all keys
-					vianos[i].release("all");
-					if(e.key) 
-						e.key.trigger();
-					vianos[i].render();
-				})
-				.addEventListener("mouseleave", (e)=>{ 
-					vianos[i].release("all");
-					vianos[i].render();
+				// apply mouse events
+				vianos[i].apply(Virtualso.VianoPlugins.mouseEvents);
+				// apply keyboard events
+				vianos[i].apply(Virtualso.VianoPlugins.keyboardEvents);
+				// apply timer event
+				vianos[i].apply(Virtualso.VianoPlugins.timer, (d)=>{
+					console.log(`%c${d.key.toString()} held for ${d.time} ms`, "font-size : x-large");
 				});
+				t2 = performance.now();
 
 				// calculate the amount of time it takes to generate
 				let genPerf = (t2 - t1).toFixed(2),

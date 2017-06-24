@@ -31,7 +31,7 @@ module.exports = {
     parseNote(n){
         if(!(typeof n === "string"))
             throw "Can only parse string"
-        let [fullMatch, fullNote, baseNote, acc = false, octave = undefined] = n.match(/(([a-g])([#sb]?))(\d+)?/i);
+        let [fullMatch, fullNote, baseNote, acc = false, octave = undefined] = n.toUpperCase().match(/(([a-g])([#sb]?))(\d+)?/i);
         return {
             full : fullMatch,
             note : fullNote,

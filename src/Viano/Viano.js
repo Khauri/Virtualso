@@ -25,21 +25,39 @@ module.exports = class Viano extends Instrument{
             },
             // specific key settings
             white: {
-                width : null, // auto-generate
-                height : null,
-                fill : "#f7f7f7",
-                stroke : "#222",
-                lineWidth : 5, // border stroke width
-                render : null,
+                default : {
+                    width : null, // auto-generate
+                    height : null,
+                    stroke : '#222',
+                    fill : "#f7f7f7",
+                    lineWidth : 5, // border stroke width
+                },
+                hover : {
+                    fill : "#e2e2e2"
+                },
+                pressed : {
+                    fill : "#999"
+                }
             },
             black: {
-                width : null, // auto-generate
-                height : null,
-                fill : "#333",
-                stroke : "#333",
-                render : null,
+                default : {
+                    width : null, // auto-generate
+                    height : null,
+                    stroke : '#333',
+                    fill : "#333",
+                    lineWidth : 5, // border stroke width
+                },
+                hover : {
+                    fill : "#000"
+                },
+                pressed : {
+                    fill : "#555"
+                }
             },
             "[[private]]": {
+                events : {
+                    "keystatechange" : []
+                },
                 keys : [],
                 data : {
                     accidentals : 0,
@@ -60,9 +78,20 @@ module.exports = class Viano extends Instrument{
      * @returns Key if found, null if not
      */
     getKeyByNote( note ){
-        return null;
+        let res = [],
+            keys = this.keys;
+        if(typeof note === "string")
+            note = helpers.parseNote(note);
+        this.keys.map((k)=>{
+            if(k.note === note.note)
+                if((note.octave !== 0 || !note.octave) || note.octave === k.octave)
+                    res.push(k);
+        });
+        
+        if(!res.length)
+            return null;
+        return res.length === 1 ? res[0] : res;
     }
-
     /**
      * Chainable shortcut for this.keys.map
      */
@@ -70,30 +99,14 @@ module.exports = class Viano extends Instrument{
         this.keys.map(cb);
         return this;
     }
-
     /**
-     * Trigger one or more keys
+     * Resets the Viano and it's keys to their default states
      */
-    trigger(keys, val, callEvent = true){
-        if(typeof keys === "string")
-            keys = keys.split(/\s/g); // split string by spaces
-        keys.map((key)=>{
-            if(key.toLowerCase() === "all") // trigger all keys
-                this.keys.map((k)=>{k.trigger(val)});
-            else{
-                let info = helpers.parseNote(key);
-                this.keys.map((k)=>{
-                    if(k.note.toUpperCase() === info.note.toUpperCase()){ //if it's the same note
-                        if(isNaN(info.octave) || info.octave === k.octave) // same octave or none specified
-                            k.trigger(val);
-                    }
-                });
-            }
+    reset(){
+        this.keys.map((k)=>{
+            k.setState("default");
         });
-        this.render();
-        return this;
     }
-
     /**
      * Releases all keys in an array or string
      * @param {*} keys 
@@ -104,13 +117,13 @@ module.exports = class Viano extends Instrument{
         keys.map((key)=>{
             key = key.toLowerCase()
             if(key === "all")
-                this.keys.map((k)=>{k.trigger(0)});
+                this.keys.map((k)=>{k.setState()});
         });
         return this;
     }
 
     /**
-     * Renders the Viano by rendering each key
+     * Render or Re-Render the Viano
      */
     render(){
         super.render(); // Performs the rotations and what-not so they needn't be worried about
@@ -168,6 +181,7 @@ module.exports = class Viano extends Instrument{
             }
         });
     }
+
     /**
      * Returns the note at a particular position
      */
@@ -189,10 +203,6 @@ module.exports = class Viano extends Instrument{
                 return a.accidental ? a : c;
         }, null);
     }
-
-    mousedown(e){
-
-    }
     /**
      * This method is called when any key is triggered on the keyboard
      */
@@ -208,13 +218,18 @@ module.exports = class Viano extends Instrument{
     set notemap( map ){
         this.notemap = map;
     }
-    /**
-     * 
-     */
-    /*get keys(){
+
+    //// getters ////
+
+    get data(){
+        return this["[[private]]"].data;
+    }
+
+    get keys(){
         return this["[[private]]"].keys;
-    }*/
-    /* Private methods */
+    }
+
+    //// PRIVATE METHODS ////
 
     /**
      * Initializes the view and sets the dimensions
@@ -265,7 +280,7 @@ module.exports = class Viano extends Instrument{
                 note : note,
                 accidental : accidental,
                 octave : octave,
-                options : accidental ? this.black : this.white
+                states : accidental ? this.black : this.white
             });
             // track accidentals and naturals
             if(accidental) this.data.accidentals ++;
@@ -278,6 +293,7 @@ module.exports = class Viano extends Instrument{
             }
         }
     }
+
     /**
      * Finds the index of a note in this viano's notemap
      */
@@ -285,17 +301,15 @@ module.exports = class Viano extends Instrument{
         
     }
 
-    /// event hooks ///
+    //// EVENT HOOKS ////
+
     __viewEventHook(data){
         if(data.x && data.y)
             data.key = this.getKeyAtPosition(data.x, data.y);
     }
-    /// getters ///
-    get data(){
-        return this["[[private]]"].data;
-    }
 
-    get keys(){
-        return this["[[private]]"].keys;
+    __keyboardEventHook(data){
+        if(data.note)
+            data.key = this.getKeyByNote(data.note);
     }
 }

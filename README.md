@@ -34,6 +34,21 @@ Virtualso is more at home in the browser, but that doesn't mean you can't take i
 ```javascript
 var Virtualso = require('Virtualso');
 ```
+# Why?
+There's not a lot of (read: none) canvas implementations of a virtual instrument library.  
+There are advantages and disadvantages of doing it this way though.  
+
+Advantages:
+- Very simple to setup
+- No complicated CSS
+- Ultimate reusability and even many instances on one page
+- No need to pollute the DOM with a bunch of elements
+
+Disadvantages:
+- Not as easily customized
+- Event handling is a little more complicated
+- Animations are a little more difficult
+
 # Sounds
 Though Virtualso is great for applications that only require visual aides, Virtualso can also be 
 configured to play sounds.

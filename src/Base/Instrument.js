@@ -1,20 +1,21 @@
-const {deep_extend} = require('./helpers');
+const Pluggable = require('./Pluggable');
+const keyMap = require('./keyMap');
 /**
  * Instrument.js
  * ===
  * Base Instrument Class
  */
-module.exports = class Instrument{
+module.exports = class Instrument extends Pluggable{
     constructor(...opts){
-        deep_extend(this, 
+        super( 
         {
             active : true,
             // whether or not this instrument is in focus
             // useful for deciding if keyboard inputs affect it
             focused : true,
 
-            scheme : this.constructor.defaultNotemap,
-            keymap : this.constructor.defaultKeymap,
+            scheme : Instrument.defaultNotemap,
+            keymap : Instrument.defaultKeymap,
 
             rotation : 0,
 
@@ -26,7 +27,6 @@ module.exports = class Instrument{
             // this is not the width and height of the view
             width : 500, // width of instrument
             height : 250, // height of instrument
-            origin : {x : this.width/2, y : this.height/2},
             top : 0,
             left : 0,
             /**
@@ -40,19 +40,12 @@ module.exports = class Instrument{
                     "mousedown" : [],
                     "mouseup" : [],
                     "mouseleave" : [],
-                    "mousemove" : []
+                    "mousemove" : [],
+                    "keyup" : [],
+                    "keydown" : [],
+                    "statechange" : [],
                 }
             },
-            // event hooks
-            __events : { 
-                "hover": [], 
-                "keydown": [],
-                "keyup":[],
-                "mousedown":[], 
-                "mouseup":[],
-                "touchdown" : [],
-                "touchup":[]
-            }
         }, ...opts);
         this.isInBrowser = !!(window && document)
     }
@@ -67,8 +60,15 @@ module.exports = class Instrument{
             if(eventArr.length == 0){
                 // TODO: Check if view exists
                 switch(type){
-                    default:
+                    case "mousedown":
+                    case "mouseup":
+                    case "mousemove":
+                    case "mouseleave":
                         this.view.addEventListener(type, this.__viewEventHandler.bind(this));
+                        break;
+                    case "keyup":
+                    case "keydown":
+                        this.view.addEventListener(type, this.__keyboardEventHandler.bind(this))
                         break;
                 }
             }
@@ -79,7 +79,7 @@ module.exports = class Instrument{
     /**
      * Calls the events
      */
-    callEvents(data,...types){
+    callEvents(data, ...types){
         if(!this.active) 
             return false;
         var type;
@@ -172,6 +172,10 @@ module.exports = class Instrument{
     get view(){
         if(!this["[[private]]"].view && this.isInBrowser){
             this["[[private]]"].view = document.createElement('canvas');
+            // Set the tabIndex so the canvas can be focused
+            // This is necessary for keyboard input
+            // Now there's an outline around the canvas that can only be removed via css
+            this["[[private]]"].view.tabIndex = 0;
         }else if(!this["[[private]]"].view){
             throw "Cannot get view while not in browser!";
         }
@@ -186,12 +190,18 @@ module.exports = class Instrument{
         this["[[private]]"].view = v;
     }
 
-    /* Static Methods */
+    //// STATIC METHODS  ////
+
     static get defaultNotemap(){
         return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     }
 
-    /* Private Methods */
+    static get defaultKeyMap(){
+        return keyMap;
+    }
+
+    //// PRIVATE METHODS ////
+
     /**
      * Handles any events called upon the view
      */
@@ -223,6 +233,20 @@ module.exports = class Instrument{
 
         if(typeof this.__viewEventHook === "function")
             this.__viewEventHook(data);
+        this.callEvents(data, e.type);
+        
+        return false;
+    }
+
+    __keyboardEventHandler(e){
+        // get the corresponding note
+        let keyMap = Instrument.defaultKeyMap,
+            data = {
+                note : keyMap[e.key]
+            }
+        if(typeof this.__keyboardEventHook === "function")
+            this.__keyboardEventHook(data);
+
         this.callEvents(data, e.type);
     }
 }
