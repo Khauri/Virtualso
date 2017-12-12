@@ -1,10 +1,11 @@
 {
-  "name": "virtualso",
+  "name": "virtualso-viano",
   "version": "1.0.0",
-  "description": "An html5 suite for visualizing instruments",
+  "description": "An html5 virtual piano canvas implementation",
   "main": "src/index.js",
   "scripts": {
-    "build": "webpack --watch",
+    "build": "webpack",
+    "dev": "webpack --watch",
     "test": "test"
   },
   "repository": {
@@ -27,6 +28,7 @@
   },
   "homepage": "https://github.com/Khauri/Virtualso#readme",
   "devDependencies": {
+    "cross-env": "^5.1.1",
     "webpack": "^2.6.1"
   },
   "dependencies": {}

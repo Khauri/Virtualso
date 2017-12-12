@@ -50,6 +50,12 @@ module.exports = class Instrument extends Pluggable{
         this.isInBrowser = !!(window && document)
     }
     /**
+     * TODO: Replace addEventLisnter
+     */
+    on(type, cb){
+        this.addEventListener(type, cb);
+    }
+    /**
      * Adds an event listener to the view
      */
     addEventListener(type, cb){

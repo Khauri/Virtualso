@@ -1,4 +1,4 @@
-const {Playable} = require('../Base');
+const {Playable} = require('../Core');
 /**
  * Represents a key
  * 

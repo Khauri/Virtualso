@@ -1,11 +1,11 @@
-const {Instrument, helpers} = require('../Base');
+const {Instrument, helpers} = require('../Core');
 const Key = require('./Key');
 /**
  * Viano.js 
  * ===
  * A customizable (V)irtual Piano for your website
  * 
- * Part of the Virtualso suite of es6 virtual instruments 
+ * Part of the Virtualso suite of ES6 virtual instruments 
  * 
  * @author AnotherBlacKid
  */
@@ -56,6 +56,10 @@ module.exports = class Viano extends Instrument{
             },
             "[[private]]": {
                 events : {
+                    "hoverIn" : [],
+                    "hoverOut" : [],
+                    "press" : [],
+                    "depress" : [],
                     "keystatechange" : []
                 },
                 keys : [],
@@ -70,7 +74,7 @@ module.exports = class Viano extends Instrument{
         this._init();
         // generate the viano
         this._generate();
-
+        // Initial render
         this.render();
     }
     /**

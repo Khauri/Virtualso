@@ -1,3 +1,8 @@
+/**
+ * Pluggables are what plugins hook on to
+ * A pluggable has certain functionality
+ */
+
 const {deep_extend} = require('./helpers');
 const Plugin = require('./Plugin');
 
@@ -7,6 +12,13 @@ const Plugin = require('./Plugin');
 class Pluggable{
     constructor(...opts){
         deep_extend(this, ...opts);
+    }
+    /**
+     * Reapply or configure this object
+     * @param {*} props 
+     */
+    config(...props){
+        deep_extend(this, ...props);
     }
     /**
      * Immediately apply a plugin's effects
