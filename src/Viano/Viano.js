@@ -7,7 +7,7 @@ const Key = require('./Key');
  * 
  * Part of the Virtualso suite of ES6 virtual instruments 
  * 
- * @author AnotherBlacKid
+ * @author KhauriMcclain
  */
 module.exports = class Viano extends Instrument{
     constructor(...opts){
